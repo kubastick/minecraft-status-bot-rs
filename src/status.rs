@@ -18,14 +18,17 @@ pub fn handler(msg: Message) {
                 Ok(_) => println!("We have telled them, that we are generating message"),
                 Err(why) => println!("We have run into trouble {}",why)
             }
-            // TODO: Do something with status
             // Check if we've got --text flag
             if msg.content.contains("--text") {
                 println!("We've got --text flag, so we are sending text message");
                 match msg.channel_id.say(status.to_string()) {
                     Ok(_) => println!("We have send result, soo goodbye!!"),
-                    Err(why) => println!("We can't tell him results {}", why)
+                    Err(why) => println!("We can't tell him results :c {}", why)
                 }
+            } else {
+                // So --text flag is no present
+                // Time to generate image!
+
             }
         }
         Err(why) => {

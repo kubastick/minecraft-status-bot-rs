@@ -24,6 +24,12 @@ impl fmt::Display for ServerStatus {
     }
 }
 
+impl ServerStatus {
+    pub fn generate_image(&self) {
+       // let mut image_surface = ImageSurface::create(Format::Rgb24,)
+    }
+}
+
 
 pub fn get_server_status(server_status: &str) -> Result<ServerStatus, Box<Error>> {
     let mut request = reqwest::get((String::from("https://api.mcsrvstat.us/1/") + server_status).as_str())?;
