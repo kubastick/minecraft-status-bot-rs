@@ -8,10 +8,10 @@ use serde_json;
 
 #[derive(Debug)]
 pub struct ServerStatus {
-    motd: String,
-    version: String,
-    players_online: i64,
-    players_max: i64,
+    pub motd: String,
+    pub version: String,
+    pub players_online: i64,
+    pub players_max: i64,
 }
 
 
