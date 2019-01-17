@@ -1,0 +1,10 @@
+:white_check_mark: List of commands:
+
+
+:bulb: !status <server_address> [--text] - Shows graphical server status [--text - Text instead of graphics]
+:bulb: !ping - "Pong"
+
+:hammer: Examples:
+!status hypixel.net --text
+!ping
+!status mistylands.net
