@@ -14,8 +14,19 @@ pub fn handler(msg: Message) {
     // Now query for server status
     match mcsrvstat::get_server_status(server_address.as_str()) {
         Ok(status) => {
+            match msg.channel_id.say("Here we go!") {
+                Ok(_) => println!("We have telled them, that we are generating message"),
+                Err(why) => println!("We have run into trouble {}",why)
+            }
             // TODO: Do something with status
-            // Check if we'have passed
+            // Check if we've got --text flag
+            if msg.content.contains("--text") {
+                println!("We've got --text flag, so we are sending text message");
+                match msg.channel_id.say(status.to_string()) {
+                    Ok(_) => println!("We have send result, soo goodbye!!"),
+                    Err(why) => println!("We can't tell him results {}", why)
+                }
+            }
         }
         Err(why) => {
             println!("We have an small failure there: {}", why);
@@ -25,12 +36,4 @@ pub fn handler(msg: Message) {
             }
         }
     }
-}
-
-fn generate_text_repr(status: ServerStatus) {
-    let formatted_response = format!(include_str!("./assets/status_response_template.txt"),
-                                     status.players_online,
-                                     status.players_max,
-                                     status.motd,
-                                     status.version);
 }
