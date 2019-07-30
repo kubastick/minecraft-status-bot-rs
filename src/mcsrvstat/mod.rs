@@ -3,9 +3,8 @@ use std::io;
 use std::prelude::v1::Result;
 
 use reqwest;
-use serde_json::Value;
 use serde_json;
-use std::fmt;
+use serde_json::Value;
 
 #[derive(Debug)]
 pub struct ServerStatus {
@@ -14,15 +13,6 @@ pub struct ServerStatus {
     pub players_online: i64,
     pub players_max: i64,
     pub player_list: Option<Vec<String>>,
-}
-
-impl fmt::Display for ServerStatus {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, include_str!("./assets/status_response_template.txt"), self.players_online,
-               self.players_max,
-               self.motd,
-               self.version)
-    }
 }
 
 impl ServerStatus {
@@ -35,7 +25,11 @@ impl ServerStatus {
 
         let json: Value = serde_json::from_str(request.text()?.as_str())?;
 
+        let available = json["debug"]["ping"].as_bool().unwrap_or(false);
 
+        if !available {
+            return Result::Err(Box::new(io::Error::new(io::ErrorKind::InvalidData, "Server is not responding to ping requests")));
+        }
 
         let mut status = Self {
             motd: String::from(json["motd"]["clean"][0].clone().as_str().unwrap_or("").trim()),

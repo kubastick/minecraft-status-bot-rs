@@ -1,16 +1,13 @@
-use serenity::model::channel::Message;
-use super::mcsrvstat::ServerStatus;
-use lazy_static::lazy_static;
-use jpeg_decoder::{Decoder, PixelFormat};
-use cairo::{ImageSurface, Format, Context, FontFace, FontSlant, FontWeight};
-use std::io::{BufReader, Read, ErrorKind};
+use std::error::Error;
 use std::fs::File;
 use std::path::Path;
-use std::error::Error;
-use serenity::utils::vecmap_to_json_map;
 
+use cairo::{Context, FontFace, FontSlant, FontWeight, ImageSurface};
+use serenity::model::channel::Message;
 
-pub fn handler(msg: Message) {
+use super::mcsrvstat::ServerStatus;
+
+pub fn handler(msg: Message) -> Result<(), Box<dyn Error>> {
     println!("User \"{}\" asked us for server status using \"{}\" command", msg.author.name, msg.content);
     let server_address = msg
         .content
@@ -20,11 +17,9 @@ pub fn handler(msg: Message) {
         .to_owned();
 
     // Tell them, that we are starting to work
-    let task_accepted_result = msg.channel_id.say("Ok, I'm going to check this minecraft server IP!");
-    match task_accepted_result {
-        Ok(_) => println!("We told them, that we are starting to work"),
-        Err(why) => println!("We can't tell him that we are starting to work {}", why)
-    }
+    msg.channel_id.say("Ok, I'm going to check this minecraft server IP!")?;
+    msg.channel_id.broadcast_typing()?;
+
     // Now query for server status
     match ServerStatus::get_server_status(server_address.as_str()) {
         Ok(status) => {
@@ -35,14 +30,24 @@ pub fn handler(msg: Message) {
             // Check if we've got --text flag
             if msg.content.contains("--text") {
                 println!("We've got --text flag, so we are sending text message");
-                match msg.channel_id.say(status.to_string()) {
-                    Ok(_) => println!("We have send result, soo goodbye!!"),
-                    Err(why) => println!("We can't tell him results :c {}", why)
-                }
+
+                let text_status = format!(
+                    r"Players online: `{}` \ `{}`
+MOTD:           `{}`
+Version:        `{}`",
+                    status.players_online,
+                    status.players_max,
+                    status.motd.trim(),
+                    status.version.trim()
+                );
+
+                msg.channel_id.say(text_status)?;
+
+                Ok(())
             } else {
                 // So --text flag is no present
                 // Time to generate image!
-                let background_image: ImageSurface = load_png_image(Path::new("src/assets/background.png")).expect("failed to load background image");
+                let background_image: ImageSurface = load_png_image(Path::new("src/assets/background.png"))?;
                 let drawing_context = Context::new(&background_image);
 
                 // Draw MOTD
@@ -100,17 +105,17 @@ pub fn handler(msg: Message) {
 
                 let mut image_buf: Vec<u8> = vec![];
 
-                background_image.write_to_png(&mut image_buf);
+                background_image.write_to_png(&mut image_buf)?;
 
-                msg.channel_id.send_files(vec![(image_buf.as_slice(), "server_status.png")], |f| { f });
+                msg.channel_id.send_files(vec![(image_buf.as_slice(), "server_status.png")], |f| { f })?;
+
+                Ok(())
             }
         }
-        Err(why) => {
-            println!("We have an small failure there: {}", why);
-            match msg.channel_id.say("Sorry, but I can't find minecraft server with these ip :c") {
-                Ok(_) => println!("Sended message about unability to find server"),
-                Err(why) => println!("We are unable to even send failure message (sadly) {}", why)
-            }
+        Err(_) => {
+            msg.channel_id.say("Sorry, but I can't find minecraft server with these ip :c")?;
+
+            Ok(())
         }
     }
 }
