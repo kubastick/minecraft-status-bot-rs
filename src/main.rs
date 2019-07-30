@@ -15,7 +15,7 @@ pub mod mcsrvstat;
 
 fn main() {
     print!("Starting bot...");
-    let mut client = Client::new(&env::var("DISCORD_TOKEN").expect("token"), MessageHandler).expect("Failed to create file");
+    let mut client = Client::new(&env::var("DISCORD_TOKEN").expect("token"), MessageHandler).expect("Failed to create client");
     client.start().expect("Failed to start client");
 }
 
