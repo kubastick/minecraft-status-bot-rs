@@ -8,6 +8,7 @@ use log::info;
 use serenity::model::channel::Message;
 
 use super::mcsrvstat::ServerStatus;
+use super::SETTINGS;
 
 pub fn handler(ctx: serenity::client::Context, msg: Message) -> Result<(), Box<dyn Error>> {
     info!("User \"{}\" executed fetching status using \"{}\" command", msg.author.name, msg.content);
@@ -47,7 +48,11 @@ Version:        `{}`",
             } else {
                 // So --text flag is no present
                 // Time to generate image!
-                let background_image: ImageSurface = load_png_image(Path::new("src/assets/background.png"))?;
+
+                let img_path = SETTINGS.read().unwrap().get_str("BACKGROUND_PNG_LOCATION").unwrap();
+
+                // TODO: Avoid reloading image every time when this command executes
+                let background_image: ImageSurface = load_png_image(Path::new(&img_path))?;
                 let drawing_context = Context::new(&background_image);
 
                 // Draw MOTD
