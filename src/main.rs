@@ -2,6 +2,10 @@ use std::{env, thread};
 use std::io::{stdout, Write};
 use std::time::Duration;
 
+use cairo::debug_reset_static_data;
+use log::debug;
+use log::info;
+use log::warn;
 use serenity::Client;
 use serenity::model::channel::Message;
 use serenity::model::gateway::Activity;
@@ -18,8 +22,8 @@ mod status;
 pub mod mcsrvstat;
 
 fn main() {
-    print!("Starting bot...");
-    stdout().flush().unwrap(); // Force pushing above println to the terminal
+    env_logger::init(); // Start logger
+    info!("Starting bot");
 
     let mut client = Client::new(&env::var("DISCORD_TOKEN").expect("token"), MessageHandler).expect("Failed to create client");
     client.start().expect("Failed to start client");
@@ -29,10 +33,13 @@ impl EventHandler for MessageHandler {
     fn message(&self, ctx: Context, msg: Message) {
         // Do not allow executing this bot commands by other ones
         if msg.author.bot {
+            debug!("Rejected message due to author being bot");
             return;
         }
 
         let message_content = msg.content.as_str();
+        debug!("Message content: {}", message_content);
+
         if message_content.starts_with("!help") {
             help::handler(ctx, msg);
             return;
@@ -44,9 +51,10 @@ impl EventHandler for MessageHandler {
         if message_content.starts_with("!status") {
             match status::handler(ctx.clone(), msg.clone()) {
                 Err(err) => {
+                    warn!("Something wrong happened during sending status response: {}", err);
                     match msg.reply(ctx.http, &format!("Something wrong happened: {}", err.description())) {
                         Err(err) => {
-                            println!("{}", err);
+                            warn!("Something wrong happened during sending error message: {}", err);
                         }
                         _ => {}
                     }
@@ -58,15 +66,19 @@ impl EventHandler for MessageHandler {
     }
 
     fn ready(&self, ctx: Context, _: Ready) {
-        println!("OK!");
+        info!("Bot successfully started");
+
+        thread::sleep(Duration::from_secs(5)); // Wait for cache to load
 
         thread::spawn(move || {
-            loop {
+            info!("Started presence thread");
 
+            loop {
                 // Force mutex to unlock before sleep occurs
                 {
                     let cache_lock = ctx.cache.read();
                     let guilds_count = cache_lock.guilds.len();
+                    info!("Updating guild count presence to {}", guilds_count);
                     ctx.set_presence(Some(Activity::listening(&format!("{} servers", guilds_count))), OnlineStatus::Online);
                 }
 

@@ -3,12 +3,15 @@ use std::fs::File;
 use std::path::Path;
 
 use cairo::{Context, FontFace, FontSlant, FontWeight, ImageSurface};
+use log::debug;
+use log::info;
 use serenity::model::channel::Message;
 
 use super::mcsrvstat::ServerStatus;
 
 pub fn handler(ctx: serenity::client::Context, msg: Message) -> Result<(), Box<dyn Error>> {
-    println!("User \"{}\" asked us for server status using \"{}\" command", msg.author.name, msg.content);
+    info!("User \"{}\" executed fetching status using \"{}\" command", msg.author.name, msg.content);
+
     let server_address = msg
         .content
         .replace("!status", "")
@@ -23,13 +26,10 @@ pub fn handler(ctx: serenity::client::Context, msg: Message) -> Result<(), Box<d
     // Now query for server status
     match ServerStatus::get_server_status(server_address.as_str()) {
         Ok(status) => {
-            match msg.channel_id.say(&ctx.http, "Here we go!") {
-                Ok(_) => println!("We have told them, that we are generating message"),
-                Err(why) => println!("We have run into trouble {}", why)
-            }
+            msg.channel_id.say(&ctx.http, "Here we go!")?;
             // Check if we've got --text flag
             if msg.content.contains("--text") {
-                println!("We've got --text flag, so we are sending text message");
+                debug!("Sending text variant of the status");
 
                 let text_status = format!(
                     r"Players online: `{}` \ `{}`
@@ -86,6 +86,8 @@ Version:        `{}`",
                 match status.player_list {
                     Some(player_list) => {
                         if let 1...10 = player_list.len() {
+                            debug!("Drawing {} player list", player_list.len());
+
                             drawing_context.set_font_size(15.0);
                             drawing_context.move_to(50.0, 400.0);
                             drawing_context.show_text("Player list:");
