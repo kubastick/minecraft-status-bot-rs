@@ -1,14 +1,29 @@
 use std::error::Error;
 use std::fs::File;
+use std::io::Read;
 use std::path::Path;
+use std::sync::RwLock;
 
 use cairo::{Context, FontFace, FontSlant, FontWeight, ImageSurface};
 use log::debug;
 use log::info;
 use serenity::model::channel::Message;
 
+use lazy_static::lazy_static;
+
 use super::mcsrvstat::ServerStatus;
 use super::SETTINGS;
+
+lazy_static! {
+    static ref BACKGROUND_DATA: RwLock<Vec<u8>> = {
+        let image_path = SETTINGS.read().unwrap().get_str("BACKGROUND_PNG_LOCATION").unwrap();
+        let mut image_file = File::open(image_path).unwrap();
+        let mut buf = Vec::new();
+        image_file.read_to_end(&mut buf).unwrap();
+
+        RwLock::new(buf)
+    };
+}
 
 pub fn handler(ctx: serenity::client::Context, msg: Message) -> Result<(), Box<dyn Error>> {
     info!("User \"{}\" executed fetching status using \"{}\" command", msg.author.name, msg.content);
@@ -48,11 +63,8 @@ Version:        `{}`",
             } else {
                 // So --text flag is no present
                 // Time to generate image!
-
-                let img_path = SETTINGS.read().unwrap().get_str("BACKGROUND_PNG_LOCATION").unwrap();
-
-                // TODO: Avoid reloading image every time when this command executes
-                let background_image: ImageSurface = load_png_image(Path::new(&img_path))?;
+                
+                let background_image: ImageSurface = create_background_surface()?;
                 let drawing_context = Context::new(&background_image);
 
                 // Draw MOTD
@@ -127,9 +139,10 @@ Version:        `{}`",
     }
 }
 
-fn load_png_image(image_path: &Path) -> Result<ImageSurface, Box<dyn Error>> {
-    let mut image_file = File::open(image_path)?;
-    let result = ImageSurface::create_from_png(&mut image_file)?;
+fn create_background_surface() -> Result<ImageSurface, Box<dyn Error>> {
+    let background_lock = BACKGROUND_DATA.read()?;
+    let mut data_ref = background_lock.as_slice();
+    let result = ImageSurface::create_from_png(&mut data_ref)?;
 
     Ok(result)
 }
