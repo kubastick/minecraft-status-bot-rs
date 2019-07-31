@@ -1,6 +1,7 @@
+use serenity::client::Context;
 use serenity::model::channel::Message;
 
-pub fn handler(msg: Message) {
+pub fn handler(ctx: Context, msg: Message) {
     println!("User \"{}\" asked for help using \"{}\" command",msg.author.name,msg.content);
     let help_message = r#":white_check_mark: List of commands:
 
@@ -14,7 +15,7 @@ pub fn handler(msg: Message) {
 !status mistylands.net"#;
 
     println!("Responding to user \"{}\" with help message",msg.author.name);
-    match msg.channel_id.say(help_message) {
+    match msg.channel_id.say(ctx.http, help_message) {
         Ok(_) => println!("Responded successfully"),
         Err(why) => println!("Failed to respond: {}",why)
     }

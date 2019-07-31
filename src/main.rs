@@ -1,9 +1,12 @@
-use std::env;
+use std::{env, thread};
 use std::io::{stdout, Write};
+use std::time::Duration;
 
 use serenity::Client;
 use serenity::model::channel::Message;
+use serenity::model::gateway::Activity;
 use serenity::model::prelude::gateway::Ready;
+use serenity::model::user::OnlineStatus;
 use serenity::prelude::Context;
 use serenity::prelude::EventHandler;
 
@@ -23,25 +26,25 @@ fn main() {
 }
 
 impl EventHandler for MessageHandler {
-    fn message(&self, _: Context, msg: Message) {
+    fn message(&self, ctx: Context, msg: Message) {
         // Do not allow executing this bot commands by other ones
         if msg.author.bot {
-            return
+            return;
         }
-        
+
         let message_content = msg.content.as_str();
         if message_content.starts_with("!help") {
-            help::handler(msg);
+            help::handler(ctx, msg);
             return;
         }
         if message_content.starts_with("!ping") {
-            ping::handler(msg);
+            ping::handler(ctx, msg);
             return;
         }
         if message_content.starts_with("!status") {
-            match status::handler(msg.clone()) {
+            match status::handler(ctx.clone(), msg.clone()) {
                 Err(err) => {
-                    match msg.reply(&format!("Something wrong happened: {}", err.description())) {
+                    match msg.reply(ctx.http, &format!("Something wrong happened: {}", err.description())) {
                         Err(err) => {
                             println!("{}", err);
                         }
@@ -54,7 +57,21 @@ impl EventHandler for MessageHandler {
         }
     }
 
-    fn ready(&self, _: Context, _: Ready) {
+    fn ready(&self, ctx: Context, _: Ready) {
         println!("OK!");
+
+        thread::spawn(move || {
+            loop {
+
+                // Force mutex to unlock before sleep occurs
+                {
+                    let cache_lock = ctx.cache.read();
+                    let guilds_count = cache_lock.guilds.len();
+                    ctx.set_presence(Some(Activity::listening(&format!("{} servers", guilds_count))), OnlineStatus::Online);
+                }
+
+                thread::sleep(Duration::from_secs(60));
+            }
+        });
     }
 }

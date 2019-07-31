@@ -7,7 +7,7 @@ use serenity::model::channel::Message;
 
 use super::mcsrvstat::ServerStatus;
 
-pub fn handler(msg: Message) -> Result<(), Box<dyn Error>> {
+pub fn handler(ctx: serenity::client::Context, msg: Message) -> Result<(), Box<dyn Error>> {
     println!("User \"{}\" asked us for server status using \"{}\" command", msg.author.name, msg.content);
     let server_address = msg
         .content
@@ -17,13 +17,13 @@ pub fn handler(msg: Message) -> Result<(), Box<dyn Error>> {
         .to_owned();
 
     // Tell them, that we are starting to work
-    msg.channel_id.say("Ok, I'm going to check this minecraft server IP!")?;
-    msg.channel_id.broadcast_typing()?;
+    msg.channel_id.say(&ctx.http, "Ok, I'm going to check this minecraft server IP!")?;
+    msg.channel_id.broadcast_typing(&ctx.http)?;
 
     // Now query for server status
     match ServerStatus::get_server_status(server_address.as_str()) {
         Ok(status) => {
-            match msg.channel_id.say("Here we go!") {
+            match msg.channel_id.say(&ctx.http, "Here we go!") {
                 Ok(_) => println!("We have told them, that we are generating message"),
                 Err(why) => println!("We have run into trouble {}", why)
             }
@@ -41,7 +41,7 @@ Version:        `{}`",
                     status.version.trim()
                 );
 
-                msg.channel_id.say(text_status)?;
+                msg.channel_id.say(ctx.http, text_status)?;
 
                 Ok(())
             } else {
@@ -107,13 +107,13 @@ Version:        `{}`",
 
                 background_image.write_to_png(&mut image_buf)?;
 
-                msg.channel_id.send_files(vec![(image_buf.as_slice(), "server_status.png")], |f| { f })?;
+                msg.channel_id.send_files(&ctx.http, vec![(image_buf.as_slice(), "server_status.png")], |f| { f })?;
 
                 Ok(())
             }
         }
         Err(_) => {
-            msg.channel_id.say("Sorry, but I can't find minecraft server with these ip :c")?;
+            msg.channel_id.say(&ctx.http, "Sorry, but I can't find minecraft server with these ip :c")?;
 
             Ok(())
         }
