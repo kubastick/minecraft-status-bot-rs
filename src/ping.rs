@@ -1,4 +1,3 @@
-use log::info;
 use log::warn;
 use serenity::client::Context;
 use serenity::model::channel::Message;

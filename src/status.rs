@@ -1,7 +1,6 @@
 use std::error::Error;
 use std::fs::File;
 use std::io::Read;
-use std::path::Path;
 use std::sync::RwLock;
 
 use cairo::{Context, FontFace, FontSlant, FontWeight, ImageSurface};
@@ -63,7 +62,7 @@ Version:        `{}`",
             } else {
                 // So --text flag is no present
                 // Time to generate image!
-                
+
                 let background_image: ImageSurface = create_background_surface()?;
                 let drawing_context = Context::new(&background_image);
 

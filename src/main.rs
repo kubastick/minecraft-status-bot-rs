@@ -1,6 +1,5 @@
-use std::{env, thread};
-use std::io::{stdout, Write};
 use std::sync::RwLock;
+use std::thread;
 use std::time::Duration;
 
 use config::Config;
